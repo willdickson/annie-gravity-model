@@ -11,11 +11,24 @@ from matplotlib.ticker import LinearLocator
 
 
 class GravityModel:
+    """
+    Model of gravitational forces acting on Robofly wing.  Use for gravitation
+    force subtraction when analysing data from a set of polars. 
+    """
+    DEFAULT_FIT_PARAM = {
+            'v'       : 10,   # velocity (int) in kinematics filename
+            'xi'      :  0,   # xi value (int) in kinematics filenames  
+            'tlim'    : None, # (tuple) lower/upper limits of time range 
+            'fcut'    : 10.0, # time range (tuple) lower and upper bounds
+            'num_phi' : 50,   # number of phi data points after resampling
+            }
 
-    DEFAULT_FCUT = 10.0
-    DEFAULT_XI = 0
-    DEFAULT_V = 10
-    DEFAULT_NUM_PHI = 50 
+    DEFAULT_PLT_PARAM = {
+            'force_surfaces'  : True,
+            'filtered_forces' : False, 
+            'grab_sections'   : False,
+            'force_pos_neg'   : False,
+            }
 
     def __init__(self):
         pass
@@ -25,50 +38,71 @@ class GravityModel:
         pass
 
 
-    def fit(self, data_dir, tlim=None, v=DEFAULT_V, xi=DEFAULT_XI, fcut=DEFAULT_FCUT, 
-            num_phi=DEFAULT_NUM_PHI):
+    def fit(self, data_dir, fit_param=None, plt_param=None): 
+        """
+        Fit gravitational model using data polar from data_dir and parameters
+        in fit_param.
 
-        datasets = self.extract_datasets(data_dir, tlim=tlim, v=v, xi=xi, fcut=fcut)
-        eta, phi, fx, fy, fz = self.create_force_surfaces(datasets, num_phi=num_phi)
+        Arguments:
 
-        figsize = (11,9)
-        fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
-        ax.set_title('fx surface')
-        surf = ax.plot_surface(eta, phi, fx, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-        ax.set_zlim(-1.01, 1.01)
-        ax.set_xlabel('eta')
-        ax.set_ylabel('phi')
-        ax.set_zlabel('fx')
-        ax.zaxis.set_major_locator(LinearLocator(10))
-        ax.zaxis.set_major_formatter('{x:.02f}')
-        fg.colorbar(surf, shrink=0.5, aspect=5)
+            data_dir = location of kinematics data files
 
-        fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
-        ax.set_title('fy surface')
-        surf = ax.plot_surface(eta, phi, fy, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-        ax.set_zlim(-1.01, 1.01)
-        ax.set_xlabel('eta')
-        ax.set_ylabel('phi')
-        ax.set_zlabel('fy')
-        ax.zaxis.set_major_locator(LinearLocator(10))
-        ax.zaxis.set_major_formatter('{x:.02f}')
-        fg.colorbar(surf, shrink=0.5, aspect=5)
+        keyword Arguments:
 
-        fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
-        ax.set_title('fz surface')
-        surf = ax.plot_surface(eta, phi, fz, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-        ax.set_zlim(-1.01, 1.01)
-        ax.set_xlabel('eta')
-        ax.set_ylabel('phi')
-        ax.set_zlabel('fz')
-        ax.zaxis.set_major_locator(LinearLocator(10))
-        ax.zaxis.set_major_formatter('{x:.02f}')
-        fg.colorbar(surf, shrink=0.5, aspect=5)
-        plt.show()
+            fit_param = dictionary containing fit parameters
+
+            {
+                'v'       :  # velocity (int) in kinematics filenames
+                'xi'      :  # xi value (int) in kinematics filenames
+                'tlim'    :  # time range (tuple) lower and upper bounds 
+                'fcut'    :  # force data lowpass filter cutoff frequency
+                'num_phi' :  # number of phi data points after resampling
+            }
+
+            plt_param = dictionary of plotting options.
+            {
+                'force_surfaces'   : True
+                'force_filter'     : False, 
+                'data_sections'    : False,
+                'pos_neg_sections' : False,
+            }
+
+        """
+        # Set default options and update with user options
+        _fit_param = dict(self.DEFAULT_FIT_PARAM)
+        if fit_param is not None:
+            _fit_param.update(fit_param)
+
+        _plt_param = dict(self.DEFAULT_PLT_PARAM)
+        if plt_param is not None:
+            _plt_param.update(plt_param)
+
+        # Read in datasets and extract force sections
+        datasets = self.extract_datasets(data_dir, _fit_param, _plt_param)
+
+        # Create fx, fy, and fz force surfaces as functions of eta and phi (meshgrids)
+        eta, phi, fx, fy, fz = self.create_force_surfaces(datasets, _fit_param['num_phi'])
+        if _plt_param['force_surfaces']:
+            plot_force_surfaces(eta, phi, fx, fy, fz)
 
 
-    def create_force_surfaces(self, datasets, num_phi=DEFAULT_NUM_PHI):
-        """ Create surfaces for fx, fy, fz forces as functions of eta and phi """
+    def create_force_surfaces(self, datasets, num_phi):
+        """ 
+        Creates surfaces for fx, fy, fz forces as functions of eta and phi 
+
+        Arguments:
+
+          datasets = dictionary mapping eta values to kinematics and forces. 
+
+        Returns:
+
+          eta = meshgrid of eta values  
+          phi = meshgrid of phi values 
+          fx  = component of forces in x direction (chordwise direction)
+          fy  = component of forces in y direction (spanwise direction)
+          fz  = component of forces in z direction (normal to wing surface)
+
+        """
         # Get arrays of eta and phi values 
         eta_vals = np.array(sorted(datasets.keys()))
         phi_max = min([datasets[eta]['phi'].max() for eta in eta_vals])
@@ -92,13 +126,22 @@ class GravityModel:
         return eta, phi, fx, fy, fz
 
 
-    def extract_datasets(self, data_dir, v=10, xi=0, tlim=None, fcut=DEFAULT_FCUT):
-        """ Extract data sections with dphi=constant for each eta """
-        data_files = self.get_list_of_data_files(data_dir, v=v, xi=xi)
-        alphas, data_files = sort_data_files_by_alpha(data_files)
+    def extract_datasets(self, data_dir, fit_param, plt_param): 
+        """ 
+        Extract data sections with dphi=constant for each eta 
 
+        Arguments:
+          
+          data_dir = location of kinematics data files
+          fit_param = dictionary containing fit parameters
+          plt_param = dictionary containing plotting options
+
+        """
+        data_files = self.get_list_of_data_files(data_dir, v=fit_param['v'], xi=fit_param['xi'])
+        alphas, data_files = sort_data_files_by_alpha(data_files)
         datasets = {}
 
+        print('loading datasets')
         for alpha, file in zip(alphas, data_files):
             print(f'  {file}')
             data = io.loadmat(str(file))
@@ -114,8 +157,8 @@ class GravityModel:
 
             # Cut out sections between tlim[0] and tlim[1]
 
-            if tlim is not None:
-                mask_tlim = np.logical_and(t >= tlim[0], t <= tlim[1])
+            if fit_param['tlim'] is not None:
+                mask_tlim = np.logical_and(t >= fit_param['tlim'][0], t <= fit_param['tlim'][1])
                 t = t[mask_tlim]
                 eta = eta[mask_tlim]
                 phi = phi[mask_tlim]
@@ -126,31 +169,14 @@ class GravityModel:
 
             # Lowpass filter force data
             dt = t[1] - t[0]
-            force_filt = sig.butter(4, fcut, btype='low', output='ba', fs=1/dt)
+            force_filt = sig.butter(4, fit_param['fcut'], btype='low', output='ba', fs=1/dt)
             fx_filt = sig.filtfilt(*force_filt, fx)
             fy_filt = sig.filtfilt(*force_filt, fy)
             fz_filt = sig.filtfilt(*force_filt, fz)
 
             # Optional plot showing filtered and unfilterd force data
-            if 0:
-                fg, ax = plt.subplots(3, 1, sharex=True)
-                ax[0].set_title(f'alpha = {alpha}')
-                ax[0].plot(t, fx, 'b')
-                ax[0].plot(t, fx_filt, 'r')
-                ax[0].set_ylabel('fx')
-                ax[0].grid(True)
-
-                ax[1].plot(t, fy, 'b')
-                ax[1].plot(t, fy_filt, 'r')
-                ax[1].set_ylabel('fy')
-                ax[1].grid(True)
-
-                ax[2].plot(t, fz, 'b')
-                ax[2].plot(t, fz_filt, 'r')
-                ax[2].set_ylabel('fz')
-                ax[2].grid(True)
-                ax[2].set_xlabel('t (sec)')
-                plt.show()
+            if plt_param['filtered_forces']:
+                plot_filtered_forces(t, fx, fy, fz, fx_filt, fy_filt, fz_filt, alpha)
 
             # Get sections where dphi is equal to maximum
             mask_pos = dphi >= dphi.max() 
@@ -197,69 +223,20 @@ class GravityModel:
                     }
 
             # Optional plot showing grab sections for gravitational model
-            if 0:
-                fg, ax = plt.subplots(6, 1, sharex=True)
-                ax[0].set_title(f'alpha = {alpha}')
+            if plt_param['grab_sections']:
+                datafull = {
+                        't'   : t, 
+                        'eta' : eta, 
+                        'phi' : phi, 
+                        'dphi': dphi, 
+                        'fx'  : fx_filt, 
+                        'fy'  : fy_filt, 
+                        'fz'  : fz_filt
+                        }
+                plot_grab_sections(datafull, datasets[eta_pos_val], datasets[eta_neg_val], alpha)
 
-                ax[0].plot(t, eta,'b')
-                ax[0].plot(t_pos, eta_pos, '.r')
-                ax[0].plot(t_neg, eta_neg, '.g')
-                ax[0].set_ylabel('eta')
-                ax[0].grid(True)
-
-
-                ax[1].plot(t, phi,'b')
-                ax[1].plot(t_pos, phi_pos, '.r')
-                ax[1].plot(t_neg, phi_neg, '.g')
-                ax[1].set_ylabel('phi')
-                ax[1].grid(True)
-
-                ax[2].plot(t, dphi)
-                ax[2].plot(t_pos, dphi_pos, '.r')
-                ax[2].plot(t_neg, dphi_neg, '.g')
-                ax[2].set_ylabel('dphi')
-                ax[2].grid(True)
-
-                ax[3].plot(t, fx_filt, 'b')
-                ax[3].plot(t_pos, fx_filt_pos, '.r')
-                ax[3].plot(t_neg, fx_filt_neg, '.g')
-                ax[3].set_ylabel('fx_filt')
-                ax[3].grid(True)
-
-                ax[4].plot(t, fy_filt, 'b')
-                ax[4].plot(t_pos, fy_filt_pos, '.r')
-                ax[4].plot(t_neg, fy_filt_neg, '.g')
-                ax[4].set_ylabel('fy_filt')
-                ax[4].grid(True)
-
-                ax[5].plot(t, fz_filt, 'b')
-                ax[5].plot(t_pos, fz_filt_pos, '.r')
-                ax[5].plot(t_neg, fz_filt_neg, '.g')
-                ax[5].set_ylabel('fz_filt')
-                ax[5].grid(True)
-                ax[5].set_xlabel('t (sec)')
-                plt.show()
-
-
-            if 0:
-                fg, ax = plt.subplots(3,1)
-                ax[0].set_title(f'alpha = {alpha}')
-                ax[0].plot(phi_pos, fx_filt_pos, '.b')
-                ax[0].plot(phi_neg, fx_filt_neg, '.r')
-                ax[0].set_ylabel('fx')
-                ax[0].grid(True)
-
-                ax[1].plot(phi_pos, fy_filt_pos, '.b')
-                ax[1].plot(phi_neg, fy_filt_neg, '.r')
-                ax[1].set_ylabel('fy')
-                ax[1].grid(True)
-
-                ax[2].plot(phi_pos, fz_filt_pos, '.b')
-                ax[2].plot(phi_neg, fz_filt_neg, '.r')
-                ax[2].set_ylabel('fz')
-                ax[2].grid(True)
-                ax[2].set_xlabel('t (sec)')
-                plt.show()
+            if plt_param['force_pos_neg']:
+                plot_force_pos_neg(datasets[eta_pos_val], datasets[eta_neg_val], alpha)
 
         return  datasets
 
@@ -292,6 +269,132 @@ def sort_data_files_by_alpha(data_files):
     return alphas, data_files
 
 
+def plot_force_pos_neg(datapos, dataneg, alpha): 
+    fg, ax = plt.subplots(3,1)
+    ax[0].set_title(f'alpha = {alpha}')
+    ax[0].set_ylabel('fx')
+    ax[0].grid(True)
+    ax[1].set_ylabel('fy')
+    ax[1].grid(True)
+    ax[2].set_ylabel('fz')
+    ax[2].grid(True)
+    ax[2].set_xlabel('t (sec)')
+    for dataset, style in ((datapos, '.r'), (dataneg, '.b')):
+        phi = dataset['phi']
+        fx = dataset['fx']
+        fy = dataset['fy']
+        fz = dataset['fz']
+        ax[0].plot(phi, fx, style)
+        ax[1].plot(phi, fy, style)
+        ax[2].plot(phi, fz, style)
+    plt.show()
+
+
+def plot_grab_sections(datafull, datapos, dataneg, alpha): 
+
+    t = datafull['t']
+    eta = datafull['eta']
+    phi = datafull['phi']
+    dphi = datafull['dphi']
+    fx = datafull['fx']
+    fy = datafull['fy']
+    fz = datafull['fz']
+
+    fg, ax = plt.subplots(6, 1, sharex=True)
+    ax[0].set_title(f'alpha = {alpha}')
+    ax[0].set_ylabel('eta')
+    ax[0].grid(True)
+    ax[1].set_ylabel('phi')
+    ax[1].grid(True)
+    ax[2].set_ylabel('dphi')
+    ax[2].grid(True)
+    ax[3].set_ylabel('fx_filt')
+    ax[3].grid(True)
+    ax[4].set_ylabel('fy_filt')
+    ax[4].grid(True)
+    ax[5].set_ylabel('fz_filt')
+    ax[5].grid(True)
+    ax[5].set_xlabel('t (sec)')
+
+    for dataset, style in ((datafull, 'b'), (datapos, '.r'), (dataneg, '.g')):
+        t = dataset['t']
+        eta = dataset['eta']
+        phi = dataset['phi']
+        dphi = dataset['dphi']
+        fx = dataset['fx']
+        fy = dataset['fy']
+        fz = dataset['fz']
+        ax[0].plot(t, eta, style)
+        ax[1].plot(t, phi, style)
+        ax[2].plot(t, dphi, style)
+        ax[3].plot(t, fx, style)
+        ax[4].plot(t, fy, style)
+        ax[5].plot(t, fz, style)
+    plt.show()
+
+
+def plot_filtered_forces(t, fx, fy, fz, fx_filt, fy_filt, fz_filt, alpha): 
+    """
+    Plot filtered raw and filtered forces.
+    """
+    fg, ax = plt.subplots(3, 1, sharex=True)
+    ax[0].set_title(f'alpha = {alpha}')
+    ax[0].plot(t, fx, 'b')
+    ax[0].plot(t, fx_filt, 'r')
+    ax[0].set_ylabel('fx')
+    ax[0].grid(True)
+
+    ax[1].plot(t, fy, 'b')
+    ax[1].plot(t, fy_filt, 'r')
+    ax[1].set_ylabel('fy')
+    ax[1].grid(True)
+
+    ax[2].plot(t, fz, 'b')
+    ax[2].plot(t, fz_filt, 'r')
+    ax[2].set_ylabel('fz')
+    ax[2].grid(True)
+    ax[2].set_xlabel('t (sec)')
+    plt.show()
+
+
+def plot_force_surfaces(eta, phi, fx, fy, fz):
+    """
+    Plots fx, fy, fz force surfaces as a function of eta and phi
+    """
+    figsize = (11,9)
+    fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
+    ax.set_title('fx surface')
+    surf = ax.plot_surface(eta, phi, fx, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    ax.set_zlim(-1.01, 1.01)
+    ax.set_xlabel('eta')
+    ax.set_ylabel('phi')
+    ax.set_zlabel('fx')
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter('{x:.02f}')
+    fg.colorbar(surf, shrink=0.5, aspect=5)
+
+    fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
+    ax.set_title('fy surface')
+    surf = ax.plot_surface(eta, phi, fy, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    ax.set_zlim(-1.01, 1.01)
+    ax.set_xlabel('eta')
+    ax.set_ylabel('phi')
+    ax.set_zlabel('fy')
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter('{x:.02f}')
+    fg.colorbar(surf, shrink=0.5, aspect=5)
+
+    fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
+    ax.set_title('fz surface')
+    surf = ax.plot_surface(eta, phi, fz, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    ax.set_zlim(-1.01, 1.01)
+    ax.set_xlabel('eta')
+    ax.set_ylabel('phi')
+    ax.set_zlabel('fz')
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter('{x:.02f}')
+    fg.colorbar(surf, shrink=0.5, aspect=5)
+    plt.show()
 
 
 
