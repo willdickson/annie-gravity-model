@@ -478,6 +478,7 @@ def plot_force_surfaces(eta, phi, fx, fy, fz):
     """
 
     figsize = (11,9)
+    figsize = (8,6)
     fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
     ax.set_title('fx surface')
     surf = ax.plot_surface(eta, phi, fx, cmap=cm.coolwarm, linewidth=0, antialiased=False)
