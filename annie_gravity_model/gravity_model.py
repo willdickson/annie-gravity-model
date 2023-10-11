@@ -20,7 +20,7 @@ class GravityModel:
             'xi'      :  0,   # xi value (int) in kinematics filenames  
             't_lim'   : None, # (tuple) lower/upper limits of time range 
             'eta_lim' : None, # (tuple) lower/upper limits of eta range
-            'fcut'    : 10.0, # time range (tuple) lower and upper bounds
+            'fcut'    : 10.0, # frequency cutoff for force lowpass filter
             'num_phi' : 50,   # number of phi data points after resampling
             }
 
