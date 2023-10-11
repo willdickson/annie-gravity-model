@@ -16,7 +16,7 @@ class GravityModel:
             't_lim'   : None, # (tuple) lower/upper limits of time range 
             'eta_lim' : None, # (tuple) lower/upper limits of eta range
             'fcut'    : 10.0, # frequency cutoff for force lowpass filter
-            'num_phi' : 50,   # number of phi data points after resampling
+            'num_phi' : 1000, # number of phi data points after resampling
             }
 
     DEFAULT_PLOT_PRM = {

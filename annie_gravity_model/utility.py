@@ -27,13 +27,13 @@ def load_datasets(data_dir, data_prm, plot_prm):
         data = io.loadmat(str(file))
 
         # Extract the data we need for polars
-        t = data['t_FT_s'][:,0]
-        eta = data['wingkin_s'][:,2]
-        phi = data['wingkin_s'][:,3]
-        dphi = data['wingkin_s'][:,9]
-        fx = data['FT_conv_s'][0,:]
-        fy = data['FT_conv_s'][2,:]
-        fz = data['FT_conv_s'][1,:]
+        t = data['t_FT_f'][:,0]
+        eta = data['wingkin_f'][:,2]
+        phi = data['wingkin_f'][:,3]
+        dphi = data['wingkin_f'][:,9]
+        fx = data['FT_conv_f'][0,:]
+        fy = data['FT_conv_f'][2,:]
+        fz = data['FT_conv_f'][1,:]
 
         # Cut out sections between t_lim[0] and t_lim[1]
 
