@@ -251,7 +251,7 @@ class GravityModel:
           plt_param = dictionary containing plotting options
 
         """
-        data_files = self.get_list_of_data_files(data_dir, v=fit_param['v'], xi=fit_param['xi'])
+        data_files = get_list_of_data_files(data_dir, v=fit_param['v'], xi=fit_param['xi'])
         alphas, data_files = sort_data_files_by_alpha(data_files)
         datasets = {}
 
@@ -358,18 +358,19 @@ class GravityModel:
 
 
 
-    def get_list_of_data_files(self, data_dir, v=10, xi=0):
-        """ Get list of relvant data files - filter by v and xi. """
-        data_dir = pathlib.Path(data_dir)
-        data_files = [item for item in data_dir.iterdir() if item.is_file]
-        data_files = [item for item in data_files if f'_v_{v}' in item.name]
-        data_files = [item for item in data_files if f'_xi_{xi}' in item.name]
-        data_files.sort()
-        return data_files
 
 
 # Utility functions
 # ---------------------------------------------------------------------------------------
+def get_list_of_data_files(data_dir, v=10, xi=0):
+    """ Get list of relvant data files - filter by v and xi. """
+    data_dir = pathlib.Path(data_dir)
+    data_files = [item for item in data_dir.iterdir() if item.is_file]
+    data_files = [item for item in data_files if f'_v_{v}' in item.name]
+    data_files = [item for item in data_files if f'_xi_{xi}' in item.name]
+    data_files.sort()
+    return data_files
+
 def sort_data_files_by_alpha(data_files): 
     """ 
     Sorts the data files by alpha where alpha is extracted from the data file name. It
