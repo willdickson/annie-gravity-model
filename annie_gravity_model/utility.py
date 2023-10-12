@@ -40,6 +40,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
         if data_prm['t_lim'] is not None:
             mask_t_lim = np.logical_and(t >= data_prm['t_lim'][0], t <= data_prm['t_lim'][1])
             t = t[mask_t_lim]
+            ind = np.arange(t.shape[0])
             eta = eta[mask_t_lim]
             phi = phi[mask_t_lim]
             dphi = dphi[mask_t_lim]
@@ -61,6 +62,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
         # Get sections where dphi is equal to maximum
         mask_pos = dphi >= dphi.max() 
         t_pos = t[mask_pos]
+        ind_pos = ind[mask_pos]
         eta_pos = eta[mask_pos]
         phi_pos = phi[mask_pos]
         dphi_pos = dphi[mask_pos]
@@ -71,6 +73,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
         # Get sections where dphi is equal to -maximum
         mask_neg = dphi <= dphi.min() 
         t_neg = t[mask_neg]
+        ind_neg = t[mask_neg]
         eta_neg = eta[mask_neg]
         phi_neg = phi[mask_neg]
         dphi_neg = dphi[mask_neg]
@@ -84,6 +87,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
         
         datasets[eta_pos_val] = { 
                 't'    : t_pos, 
+                'ind'  : ind_pos,
                 'eta'  : eta_pos,
                 'phi'  : phi_pos, 
                 'dphi' : dphi_pos,
@@ -94,6 +98,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
 
         datasets[eta_neg_val] = { 
                 't'    : t_neg, 
+                'ind'  : ind_neg,
                 'eta'  : eta_neg,
                 'phi'  : phi_neg, 
                 'dphi' : dphi_neg,
