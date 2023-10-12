@@ -28,6 +28,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
 
         # Extract the data we need for polars
         t = data['t_FT_f'][:,0]
+        ind = np.arange(t.shape[0])
         eta = data['wingkin_f'][:,2]
         phi = data['wingkin_f'][:,3]
         dphi = data['wingkin_f'][:,9]
@@ -40,7 +41,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
         if data_prm['t_lim'] is not None:
             mask_t_lim = np.logical_and(t >= data_prm['t_lim'][0], t <= data_prm['t_lim'][1])
             t = t[mask_t_lim]
-            ind = np.arange(t.shape[0])
+            ind = t[mask_t_lim]
             eta = eta[mask_t_lim]
             phi = phi[mask_t_lim]
             dphi = dphi[mask_t_lim]
