@@ -6,7 +6,7 @@ data_prm = {
         'eta_lim' : ( -80,  80),  # eta limits for force surfaces
         }
 plot_prm = {
-        'grab_sections' : True,
+        'grab_sections' : False,
         }
 
 data_dir = pathlib.Path('../../results_with_conv')

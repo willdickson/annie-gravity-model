@@ -1,9 +1,7 @@
 import pickle
 import numpy as np
 import scipy.interpolate as interp
-
-from .utility import load_datasets
-from .utility import plot_force_surfaces
+from . import utility
 
 class GravityModel:
     """
@@ -104,7 +102,7 @@ class GravityModel:
             fz = self.model['force_surface']['fz']
         else:
             raise ValueError(f'unknown plot_type = {plot_type}')
-        plot_force_surfaces(eta, phi, fx, fy, fz)
+        utility.plot_force_surfaces(eta, phi, fx, fy, fz)
 
 
     def fit(self, data_dir, data_prm=None, plot_prm=None): 
@@ -146,7 +144,7 @@ class GravityModel:
             _plot_prm.update(plot_prm)
 
         # Read in datasets and extract force sections
-        datasets = load_datasets(data_dir, _data_prm, _plot_prm)
+        datasets = utility.load_datasets(data_dir, _data_prm, _plot_prm)
 
         # Create fx, fy, and fz force surfaces as functions of eta and phi (meshgrids)
         self.model['force_surface'] = self.create_force_surfaces(datasets, _data_prm)
