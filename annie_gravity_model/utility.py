@@ -36,8 +36,13 @@ def load_datasets(data_dir, data_prm, plot_prm):
         fy = data['FT_conv_f'][2,:]
         fz = data['FT_conv_f'][1,:]
 
-        # Cut out sections between t_lim[0] and t_lim[1]
+        # Correct for possible gain error if necessary
+        if data_prm['gain_corr'] is not None:
+            fx = data_prm['gain_corr']*fx
+            fy = data_prm['gain_corr']*fy
+            fz = data_prm['gain_corr']*fz
 
+        # Cut out sections between t_lim[0] and t_lim[1]
         if data_prm['t_lim'] is not None:
             mask_t_lim = np.logical_and(t >= data_prm['t_lim'][0], t <= data_prm['t_lim'][1])
             t = t[mask_t_lim]
@@ -249,7 +254,8 @@ def plot_force_surfaces(eta, phi, fx, fy, fz):
     fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
     ax.set_title('fx surface')
     surf = ax.plot_surface(eta, phi, fx, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    ax.set_zlim(-1.01, 1.01)
+    fx_abs_max = np.absolute(fx).max()
+    ax.set_zlim(-1.05*fx_abs_max, 1.05*fx_abs_max)
     ax.set_xlabel('eta')
     ax.set_ylabel('phi')
     ax.set_zlabel('fx')
@@ -260,7 +266,8 @@ def plot_force_surfaces(eta, phi, fx, fy, fz):
     fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
     ax.set_title('fy surface')
     surf = ax.plot_surface(eta, phi, fy, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    ax.set_zlim(-1.01, 1.01)
+    fy_abs_max = np.absolute(fy).max()
+    ax.set_zlim(-1.05*fy_abs_max, 1.05*fy_abs_max)
     ax.set_xlabel('eta')
     ax.set_ylabel('phi')
     ax.set_zlabel('fy')
@@ -271,7 +278,8 @@ def plot_force_surfaces(eta, phi, fx, fy, fz):
     fg, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=figsize)
     ax.set_title('fz surface')
     surf = ax.plot_surface(eta, phi, fz, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    ax.set_zlim(-1.01, 1.01)
+    fz_abs_max = np.absolute(fz).max()
+    ax.set_zlim(-1.05*fz_abs_max, 1.05*fz_abs_max)
     ax.set_xlabel('eta')
     ax.set_ylabel('phi')
     ax.set_zlabel('fz')

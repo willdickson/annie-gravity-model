@@ -9,12 +9,13 @@ class GravityModel:
     force subtraction when analysing data from a set of polars. 
     """
     DEFAULT_DATA_PRM = {
-            'v'       : 10,   # velocity (int) in kinematics filename
-            'xi'      :  0,   # xi value (int) in kinematics filenames  
-            't_lim'   : None, # (tuple) lower/upper limits of time range 
-            'eta_lim' : None, # (tuple) lower/upper limits of eta range
-            'fcut'    : 10.0, # frequency cutoff for force lowpass filter
-            'num_phi' : 1000, # number of phi data points after resampling
+            'v'         : 10,   # velocity (int) in kinematics filename
+            'xi'        :  0,   # xi value (int) in kinematics filenames  
+            't_lim'     : None, # (tuple) lower/upper limits of time range 
+            'eta_lim'   : None, # (tuple) lower/upper limits of eta range
+            'fcut'      : 10.0, # frequency cutoff for force lowpass filter
+            'num_phi'   : 1000, # number of phi data points after resampling
+            'gain_corr' : 1.0 # Gain correction scaling factor
             }
 
     DEFAULT_PLOT_PRM = {
