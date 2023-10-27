@@ -6,13 +6,13 @@ data_prm = {
         'xi'        :  0,           # xi value (int) in kinematics filenames  
         't_lim'     : ( 0.8, 7.5),  # t limits for finding grab sections
         'eta_lim'   : ( -80,  80),  # eta limits for force surfaces
-        'fcut'      : 10.0,       # frequency cutoff for force lowpass filter
-        'num_phi'   : 1000,       # number of phi data points after resampling
-        'gain_corr' : 3.3         # Gain correction scaling factor
+        'fcut'      : 10.0,         # frequency cutoff for force lowpass filter
+        'num_phi'   : 1000,         # number of phi data points after resampling
+        'gain_corr' : 2.0           # Gain correction scaling factor (analog ref issues)
         }
 plot_prm = {
         'filtered_forces' : False, 
-        'grab_sections'   : False,
+        'grab_sections'   : True,
         'force_pos_neg'   : False,
         'force_surfaces'  : False,
         }
