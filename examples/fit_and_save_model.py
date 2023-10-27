@@ -12,7 +12,7 @@ data_prm = {
         }
 plot_prm = {
         'filtered_forces' : False, 
-        'grab_sections'   : True,
+        'grab_sections'   : False,
         'force_pos_neg'   : False,
         'force_surfaces'  : False,
         }

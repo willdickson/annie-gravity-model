@@ -19,7 +19,10 @@ def load_datasets(data_dir, data_prm, plot_prm):
     """
     data_files = get_list_of_data_files(data_dir, v=data_prm['v'], xi=data_prm['xi'])
     alphas, data_files = sort_data_files_by_alpha(data_files)
+
     datasets = {}
+    datasets_pos = {}
+    datasets_neg = {}
 
     print('loading datasets')
     for alpha, file in zip(alphas, data_files):
@@ -91,7 +94,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
         eta_pos_val = eta_pos.max()
         eta_neg_val = eta_neg.min()
         
-        datasets[eta_pos_val] = { 
+        dataset_pos = { 
                 't'    : t_pos, 
                 'ind'  : ind_pos,
                 'eta'  : eta_pos,
@@ -102,7 +105,7 @@ def load_datasets(data_dir, data_prm, plot_prm):
                 'fz'   : fz_filt_pos, 
                 }
 
-        datasets[eta_neg_val] = { 
+        dataset_neg = { 
                 't'    : t_neg, 
                 'ind'  : ind_neg,
                 'eta'  : eta_neg,
@@ -113,6 +116,14 @@ def load_datasets(data_dir, data_prm, plot_prm):
                 'fz'   : fz_filt_neg, 
                 }
 
+        if eta_pos_val != eta_neg_val:
+            datasets[eta_pos_val] = dataset_pos
+            datasets[eta_neg_val] = dataset_neg
+        else:
+            dataset_concat = {}
+            for k in dataset_pos:
+                dataset_concat[k] = np.concatenate((dataset_neg[k], dataset_pos[k]))
+            datasets[eta_pos_val] = dataset_concat
 
         # Optional plot showing grab sections for gravitational model
         if plot_prm.setdefault('grab_sections', False):
@@ -125,10 +136,10 @@ def load_datasets(data_dir, data_prm, plot_prm):
                     'fy'  : fy_filt, 
                     'fz'  : fz_filt
                     }
-            plot_grab_sections(datafull, datasets[eta_pos_val], datasets[eta_neg_val], alpha)
+            plot_grab_sections(datafull, dataset_pos, dataset_neg, alpha)
 
         if plot_prm.setdefault('force_pos_neg', False):
-            plot_force_pos_neg(datasets[eta_pos_val], datasets[eta_neg_val], alpha)
+            plot_force_pos_neg(dataset_pos, dataset_neg, alpha)
 
     return  datasets
 
